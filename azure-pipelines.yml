@@ -1,0 +1,62 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: Build
+  displayName: 'Compilar e Publicar'
+  steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '14.x'
+    displayName: 'Instalar o Node.js'
+
+  - script: |
+      cd client
+      npm install
+      npm run build
+    displayName: 'Compilar o Frontend React'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/client/build'
+      Contents: '**'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/client'
+    displayName: 'Copiar Artefatos de Compilação do React'
+
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/client'
+      includeRootFolder: false
+      archiveType: 'zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/client.zip'
+    displayName: 'Criar Artefato de Compilação do React'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/client.zip'
+      ArtifactName: 'client'
+      publishLocation: 'Container'
+    displayName: 'Publicar Artefato de Compilação do React'
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      addToPath: true
+    displayName: 'Instalar o Python'
+
+  - script: |
+      cd server
+      pip install -r requirements.txt
+    displayName: 'Instalar Dependências do Python'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/server'
+      ArtifactName: 'server'
+      publishLocation: 'Container'
+    displayName: 'Publicar Código do Servidor'
+
+# Adicione etapas de implantação aqui (por exemplo, implantar no Azure App Service ou outra plataforma de hospedagem)
